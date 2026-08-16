@@ -1,0 +1,109 @@
+services:
+
+  eureka-server:
+    build:
+      context: ./backend/eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8761"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - microservices-network
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    environment:
+      AUTH_DB_USERNAME: ${AUTH_DB_USERNAME}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
+
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64}
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - microservices-network
+
+  user-skill-service:
+    build:
+      context: ./backend/user-skill-service
+      dockerfile: Dockerfile
+    container_name: user-skill-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    environment:
+      USER_SKILL_DB_USERNAME: ${USER_SKILL_DB_USERNAME}
+      USER_SKILL_DB_PASSWORD: ${USER_SKILL_DB_PASSWORD}
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - microservices-network
+
+  project-team-service:
+    build:
+      context: ./backend/project-team-service
+      dockerfile: Dockerfile
+    container_name: project-team-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    environment:
+      PROJECT_TEAM_DB_USERNAME: ${PROJECT_TEAM_DB_USERNAME}
+      PROJECT_TEAM_DB_PASSWORD: ${PROJECT_TEAM_DB_PASSWORD}
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - microservices-network
+
+  task-progress-service:
+    build:
+      context: ./backend/task-progress-service
+      dockerfile: Dockerfile
+    container_name: task-progress-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    environment:
+      TASK_PROGRESS_DB_USERNAME: ${TASK_PROGRESS_DB_USERNAME}
+      TASK_PROGRESS_DB_PASSWORD: ${TASK_PROGRESS_DB_PASSWORD}
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
